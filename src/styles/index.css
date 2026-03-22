@@ -1,0 +1,133 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --theme-text: #f4f4f5;
+  --theme-muted: #a1a1aa;
+  --theme-surface: rgba(255, 255, 255, 0.05);
+  --theme-surface-strong: rgba(0, 0, 0, 0.35);
+  --theme-surface-elevated: rgba(9, 9, 9, 0.95);
+  --theme-border: rgba(255, 255, 255, 0.1);
+  --theme-input-bg: rgba(0, 0, 0, 0.4);
+  --theme-input-border: rgba(255, 255, 255, 0.1);
+  --theme-input-placeholder: rgba(255, 255, 255, 0.35);
+  --theme-primary-bg: #ffffff;
+  --theme-primary-text: #0a0a0a;
+  --theme-secondary-bg: rgba(255, 255, 255, 0.1);
+  --theme-secondary-text: #ffffff;
+  --theme-chip-bg: #ffffff;
+  --theme-chip-text: #0a0a0a;
+  color: var(--theme-text);
+  background:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.1), transparent 28%),
+    linear-gradient(180deg, #111111 0%, #050505 100%);
+  font-family:
+    "Segoe UI", "SF Pro Display", system-ui, sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  min-height: 100vh;
+  transition:
+    background 180ms ease,
+    color 180ms ease;
+}
+
+html.light body {
+  --theme-text: #0f172a;
+  --theme-muted: #64748b;
+  --theme-surface: rgba(255, 255, 255, 0.72);
+  --theme-surface-strong: rgba(15, 23, 42, 0.05);
+  --theme-surface-elevated: rgba(255, 255, 255, 0.96);
+  --theme-border: rgba(15, 23, 42, 0.08);
+  --theme-input-bg: rgba(255, 255, 255, 0.95);
+  --theme-input-border: rgba(15, 23, 42, 0.1);
+  --theme-input-placeholder: rgba(100, 116, 139, 0.8);
+  --theme-primary-bg: #020617;
+  --theme-primary-text: #ffffff;
+  --theme-secondary-bg: rgba(15, 23, 42, 0.05);
+  --theme-secondary-text: #0f172a;
+  --theme-chip-bg: #020617;
+  --theme-chip-text: #ffffff;
+  color: var(--theme-text);
+  background:
+    radial-gradient(circle at top, rgba(15, 23, 42, 0.06), transparent 30%),
+    linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+::selection {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+html.light ::selection {
+  background: rgba(15, 23, 42, 0.14);
+}
+
+.theme-text {
+  color: var(--theme-text);
+}
+
+.theme-muted {
+  color: var(--theme-muted);
+}
+
+.theme-panel {
+  border-color: var(--theme-border);
+  background: var(--theme-surface);
+}
+
+.theme-elevated {
+  border-color: var(--theme-border);
+  background: var(--theme-surface-elevated);
+}
+
+.theme-soft {
+  background: var(--theme-surface-strong);
+}
+
+.theme-input {
+  border-color: var(--theme-input-border);
+  background: var(--theme-input-bg);
+  color: var(--theme-text);
+}
+
+.theme-input::placeholder {
+  color: var(--theme-input-placeholder);
+}
+
+.theme-primary-button {
+  background: var(--theme-primary-bg);
+  color: var(--theme-primary-text);
+}
+
+.theme-secondary-button {
+  background: var(--theme-secondary-bg);
+  color: var(--theme-secondary-text);
+}
+
+.theme-chip {
+  background: var(--theme-chip-bg);
+  color: var(--theme-chip-text);
+}
