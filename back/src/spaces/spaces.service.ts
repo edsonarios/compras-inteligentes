@@ -1,10 +1,12 @@
-import { Injectable, NotFoundException } from '@nestjs/common'
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { Repository } from 'typeorm'
+import { In, Repository } from 'typeorm'
 import { CreateSpaceDto } from './dto/create-space.dto'
 import { UpdateSpaceDto } from './dto/update-space.dto'
 import { SpaceMember } from './entities/space-member.entity'
 import { Space } from './entities/space.entity'
+import { User } from '../users/entities/user.entity'
+import { CreateSpaceMemberDto } from './dto/create-space-member.dto'
 
 @Injectable()
 export class SpacesService {
@@ -13,11 +15,66 @@ export class SpacesService {
     private readonly spacesRepository: Repository<Space>,
     @InjectRepository(SpaceMember)
     private readonly spaceMembersRepository: Repository<SpaceMember>,
+    @InjectRepository(User)
+    private readonly usersRepository: Repository<User>,
   ) {}
 
+  private async resolveMembers(
+    ownerId: string,
+    members: CreateSpaceMemberDto[] = [],
+  ): Promise<SpaceMember[]> {
+    if (members.length === 0) {
+      return []
+    }
+
+    const owner = await this.usersRepository.findOne({ where: { id: ownerId } })
+
+    if (!owner) {
+      throw new NotFoundException(`Owner ${ownerId} not found`)
+    }
+
+    const normalizedEmails = [...new Set(
+      members
+        .map((member) => member.email.trim().toLowerCase())
+        .filter(Boolean),
+    )]
+
+    if (normalizedEmails.includes(owner.email.trim().toLowerCase())) {
+      throw new BadRequestException(
+        'No puedes invitar al dueño del espacio como miembro',
+      )
+    }
+
+    const existingUsers = await this.usersRepository.find({
+      where: { email: In(normalizedEmails) },
+    })
+
+    const usersByEmail = new Map(
+      existingUsers.map((user) => [user.email.trim().toLowerCase(), user]),
+    )
+
+    const missingEmails = normalizedEmails.filter((email) => !usersByEmail.has(email))
+
+    if (missingEmails.length > 0) {
+      throw new BadRequestException(
+        `No existen usuarios para: ${missingEmails.join(', ')}`,
+      )
+    }
+
+    return normalizedEmails.map((email) => {
+      const user = usersByEmail.get(email)!
+
+      return this.spaceMembersRepository.create({
+        email,
+        userId: user.id,
+      })
+    })
+  }
+
   async create(createSpaceDto: CreateSpaceDto) {
-    const members = (createSpaceDto.members ?? []).map((member) =>
-      this.spaceMembersRepository.create(member),
+    const members = await this.resolveMembers(
+      createSpaceDto.ownerId,
+      createSpaceDto.members,
     )
 
     const space = this.spacesRepository.create({
@@ -71,7 +128,11 @@ export class SpacesService {
 
     if (updateSpaceDto.members !== undefined) {
       await this.spaceMembersRepository.delete({ spaceId: id })
-      space.members = updateSpaceDto.members.map((member) =>
+      const nextMembers = await this.resolveMembers(
+        updateSpaceDto.ownerId ?? space.ownerId,
+        updateSpaceDto.members,
+      )
+      space.members = nextMembers.map((member) =>
         this.spaceMembersRepository.create({
           ...member,
           spaceId: id,

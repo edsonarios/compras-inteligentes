@@ -24,6 +24,7 @@ type ApiSpace = {
   id: string;
   name: string;
   ownerId: string;
+  owner?: ApiUser;
   members?: ApiSpaceMember[];
   createdAt: string;
   updatedAt?: string;
@@ -78,6 +79,7 @@ export const mapSpaceFromApi = (space: ApiSpace): Space => ({
   id: space.id,
   name: space.name,
   ownerId: space.ownerId,
+  ownerEmail: space.owner?.email,
   members: (space.members ?? []).map(mapSpaceMemberFromApi),
   createdAt: space.createdAt
 });

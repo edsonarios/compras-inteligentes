@@ -13,6 +13,7 @@ export type Space = {
   id: string;
   name: string;
   ownerId: string;
+  ownerEmail?: string;
   members: SpaceMember[];
   createdAt: string;
 };

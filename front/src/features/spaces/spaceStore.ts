@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { storageKeys } from "@/lib/storage";
+import { useAuthStore } from "@/features/auth/authStore";
 import type { Space } from "@/lib/types";
 import { spaceService } from "@/features/spaces/services/spaceService";
 
@@ -14,6 +15,7 @@ type SpaceState = {
   renameSpace: (spaceId: string, name: string) => Promise<void>;
   switchSpace: (spaceId: string) => void;
   addMember: (spaceId: string, email: string) => Promise<void>;
+  removeMember: (spaceId: string, email: string) => Promise<void>;
 };
 
 export const useSpaceStore = create<SpaceState>()(
@@ -22,13 +24,24 @@ export const useSpaceStore = create<SpaceState>()(
       spaces: [],
       currentSpaceId: null,
       loadSpaces: async () => {
+        const user = useAuthStore.getState().user;
         const spaces = await spaceService.findAll();
+        const scopedSpaces = user
+          ? spaces.filter((space) => {
+              const normalizedUserEmail = user.email.trim().toLowerCase();
+              const isOwner = space.ownerId === user.id;
+              const isMember = space.members.some(
+                (member) => member.email.trim().toLowerCase() === normalizedUserEmail
+              );
+              return isOwner || isMember;
+            })
+          : [];
         const { currentSpaceId } = get();
         const nextCurrentSpaceId =
-          currentSpaceId && spaces.some((space) => space.id === currentSpaceId)
+          currentSpaceId && scopedSpaces.some((space) => space.id === currentSpaceId)
             ? currentSpaceId
-            : spaces[0]?.id ?? null;
-        set({ spaces, currentSpaceId: nextCurrentSpaceId });
+            : scopedSpaces[0]?.id ?? null;
+        set({ spaces: scopedSpaces, currentSpaceId: nextCurrentSpaceId });
       },
       resetSpaces: () => {
         set({ spaces: [], currentSpaceId: null });
@@ -63,6 +76,14 @@ export const useSpaceStore = create<SpaceState>()(
       switchSpace: (spaceId) => set({ currentSpaceId: spaceId }),
       addMember: async (spaceId, email) => {
         const updatedSpace = await spaceService.addMember(spaceId, email);
+        set((state) => ({
+          spaces: state.spaces.map((space) =>
+            space.id === spaceId ? updatedSpace : space
+          )
+        }));
+      },
+      removeMember: async (spaceId, email) => {
+        const updatedSpace = await spaceService.removeMember(spaceId, email);
         set((state) => ({
           spaces: state.spaces.map((space) =>
             space.id === spaceId ? updatedSpace : space

@@ -1,6 +1,6 @@
 import { apiRequest } from "@/lib/api";
 import { mapSpaceFromApi } from "@/lib/mappers";
-import type { Space } from "@/lib/types";
+import type { Space, User } from "@/lib/types";
 
 type CreateSpacePayload = {
   name: string;
@@ -32,12 +32,50 @@ export const spaceService = {
   async addMember(spaceId: string, email: string): Promise<Space> {
     const current = await apiRequest<Space>(`/spaces/${spaceId}`);
     const normalizedEmail = email.trim().toLowerCase();
+    const users = await apiRequest<User[]>("/users");
+    const existingUser = users.find(
+      (user) => user.email.trim().toLowerCase() === normalizedEmail
+    );
+
+    if (!existingUser) {
+      throw new Error("Solo puedes invitar usuarios ya creados.");
+    }
+
+    const ownerEmail =
+      ((current as unknown as { owner?: { email?: string } }).owner?.email ??
+        (current as unknown as { ownerEmail?: string }).ownerEmail ??
+        "")
+        .trim()
+        .toLowerCase();
+
+    if (normalizedEmail && ownerEmail && normalizedEmail === ownerEmail) {
+      throw new Error("No puedes invitar al dueño del espacio como miembro.");
+    }
+
     const nextMembers = [
       ...((current.members ?? []) as Array<{ id: string; email: string }>).map((member) => ({
         email: member.email
       })),
-      { email: normalizedEmail }
+      { email: normalizedEmail, userId: existingUser.id }
     ];
+
+    const updated = await apiRequest<Space>(`/spaces/${spaceId}`, {
+      method: "PATCH",
+      body: {
+        members: nextMembers
+      }
+    });
+
+    return mapSpaceFromApi(updated as never);
+  },
+  async removeMember(spaceId: string, memberEmail: string): Promise<Space> {
+    const current = await apiRequest<Space>(`/spaces/${spaceId}`);
+    const normalizedEmail = memberEmail.trim().toLowerCase();
+    const nextMembers = ((current.members ?? []) as Array<{ id: string; email: string }>)
+      .filter((member) => member.email.trim().toLowerCase() !== normalizedEmail)
+      .map((member) => ({
+        email: member.email
+      }));
 
     const updated = await apiRequest<Space>(`/spaces/${spaceId}`, {
       method: "PATCH",
