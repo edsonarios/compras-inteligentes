@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { BrowserRouter } from "react-router-dom";
 import { useThemeStore } from "@/app/themeStore";
 import { AppNav } from "@/components/AppNav";
@@ -10,17 +10,30 @@ import { AppRouter } from "@/routes/AppRouter";
 
 export const App = () => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const user = useAuthStore((state) => state.user);
   const login = useAuthStore((state) => state.login);
+  const register = useAuthStore((state) => state.register);
   const mode = useThemeStore((state) => state.mode);
+  const [isBootstrapping, setIsBootstrapping] = useState(true);
 
   useEffect(() => {
-    bootstrapApp();
-  }, []);
+    if (!isAuthenticated || !user) {
+      setIsBootstrapping(false);
+      return;
+    }
+
+    setIsBootstrapping(true);
+    void bootstrapApp().finally(() => setIsBootstrapping(false));
+  }, [isAuthenticated, user]);
 
   useEffect(() => {
     document.documentElement.classList.remove("light", "dark");
     document.documentElement.classList.add(mode);
   }, [mode]);
+
+  if (isBootstrapping) {
+    return null;
+  }
 
   if (!isAuthenticated) {
     return (
@@ -28,7 +41,7 @@ export const App = () => {
         <div className="fixed left-4 top-4 z-40">
           <ThemeToggle />
         </div>
-        <LoginScreen onLogin={login} />
+        <LoginScreen onLogin={login} onRegister={register} />
       </>
     );
   }

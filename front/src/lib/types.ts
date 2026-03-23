@@ -31,7 +31,7 @@ export type Location = {
   spaceId: string;
   name: string;
   gps: string;
-  imageBase64?: string;
+  imageUrl?: string;
   createdAt: string;
 };
 
@@ -44,7 +44,7 @@ export type Purchase = {
   quantity: number;
   date: string;
   note: string;
-  imageBase64?: string;
+  imageUrl?: string;
   createdAt: string;
 };
 

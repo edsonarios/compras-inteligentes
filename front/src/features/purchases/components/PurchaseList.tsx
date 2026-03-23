@@ -29,6 +29,7 @@ export const PurchaseList = ({
   subtitle?: string;
 }) => {
   const [search, setSearch] = useState("");
+  const [selectedPurchaseId, setSelectedPurchaseId] = useState<string | null>(null);
   const [visibleCount, setVisibleCount] = useState(() => Math.min(10, purchases.length));
   const previousLength = useRef(purchases.length);
   const categoryOptions = useMemo(
@@ -91,6 +92,15 @@ export const PurchaseList = ({
       }),
     [filteredPurchases, products, sortRules]
   );
+  const selectedPurchase = selectedPurchaseId
+    ? purchases.find((purchase) => purchase.id === selectedPurchaseId) ?? null
+    : null;
+  const selectedProduct = selectedPurchase
+    ? products.find((item) => item.id === selectedPurchase.productId)
+    : null;
+  const selectedLocation = selectedPurchase
+    ? locations.find((item) => item.id === selectedPurchase.locationId)
+    : null;
 
   useEffect(() => {
     if (purchases.length > previousLength.current) {
@@ -160,6 +170,7 @@ export const PurchaseList = ({
         sortedPurchases.slice(0, visibleCount).map((purchase, index) => {
           const product = products.find((item) => item.id === purchase.productId);
           const location = locations.find((item) => item.id === purchase.locationId);
+
           return (
             <Panel key={purchase.id} className="space-y-4">
               <div className="flex items-start justify-between gap-4">
@@ -190,12 +201,22 @@ export const PurchaseList = ({
                 </p>
               ) : null}
 
-              {purchase.imageBase64 ? (
-                <img
-                  src={purchase.imageBase64}
-                  alt={`Compra de ${product?.name ?? "producto"}`}
-                  className="h-40 w-full rounded-[24px] object-cover"
-                />
+              {purchase.imageUrl ? (
+                <button
+                  type="button"
+                  className="block w-full overflow-hidden rounded-[24px]"
+                  onClick={() => setSelectedPurchaseId(purchase.id)}
+                >
+                  <img
+                    src={purchase.imageUrl}
+                    alt={`Compra de ${product?.name ?? "producto"}`}
+                    className="h-40 w-full rounded-[24px] object-cover transition hover:opacity-90"
+                  />
+                </button>
+              ) : null}
+
+              {purchase.imageUrl ? (
+                <p className="theme-muted text-xs">Toca la imagen para ver el detalle completo.</p>
               ) : null}
 
               {onEdit && onDelete ? (
@@ -221,6 +242,76 @@ export const PurchaseList = ({
         >
           Mostrar el resto
         </Button>
+      ) : null}
+
+      {selectedPurchase && selectedProduct ? (
+        <div
+          className="bg-black/95 fixed inset-0 z-50 flex items-center justify-center p-4"
+          onClick={() => setSelectedPurchaseId(null)}
+        >
+          <div
+            className="theme-panel theme-text max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[32px] border p-5 shadow-panel"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="mb-4 flex items-start justify-between gap-4">
+              <div>
+                <p className="theme-muted text-xs uppercase tracking-[0.24em]">Detalle</p>
+                <h3 className="mt-2 text-2xl font-semibold">{selectedProduct.name}</h3>
+                <p className="theme-muted mt-1 text-sm">
+                  {selectedLocation?.name ?? "Ubicacion eliminada"} · {formatDate(selectedPurchase.date)}
+                </p>
+              </div>
+              <Button variant="ghost" className="px-3" onClick={() => setSelectedPurchaseId(null)}>
+                Cerrar
+              </Button>
+            </div>
+
+            {selectedPurchase.imageUrl ? (
+              <img
+                src={selectedPurchase.imageUrl}
+                alt={`Compra de ${selectedProduct.name}`}
+                className="h-auto max-h-[24rem] w-full rounded-[28px] object-contain"
+              />
+            ) : null}
+
+            <div className="mt-5 grid gap-4">
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="theme-soft rounded-[20px] p-3">
+                  <p className="theme-muted text-xs uppercase tracking-[0.2em]">Categoria</p>
+                  <p className="mt-1 font-medium">{selectedProduct.category || "Sin categoria"}</p>
+                </div>
+                <div className="theme-soft rounded-[20px] p-3">
+                  <p className="theme-muted text-xs uppercase tracking-[0.2em]">Cantidad</p>
+                  <p className="mt-1 font-medium">{selectedPurchase.quantity}</p>
+                </div>
+                <div className="theme-soft rounded-[20px] p-3">
+                  <p className="theme-muted text-xs uppercase tracking-[0.2em]">Precio unitario</p>
+                  <p className="mt-1 font-medium">{currency.format(selectedPurchase.price)}</p>
+                </div>
+                <div className="theme-soft rounded-[20px] p-3">
+                  <p className="theme-muted text-xs uppercase tracking-[0.2em]">Total</p>
+                  <p className="mt-1 font-medium">
+                    {currency.format(selectedPurchase.price * selectedPurchase.quantity)}
+                  </p>
+                </div>
+              </div>
+
+              {selectedProduct.description ? (
+                <div>
+                  <p className="theme-muted text-xs uppercase tracking-[0.2em]">Descripcion</p>
+                  <p className="mt-1 text-sm leading-6">{selectedProduct.description}</p>
+                </div>
+              ) : null}
+
+              {selectedPurchase.note ? (
+                <div>
+                  <p className="theme-muted text-xs uppercase tracking-[0.2em]">Nota</p>
+                  <p className="mt-1 text-sm leading-6">{selectedPurchase.note}</p>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </div>
       ) : null}
     </div>
   );

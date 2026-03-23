@@ -75,7 +75,7 @@ export const DashboardPage = () => {
         <Panel>
           <SectionHeader
             title="Resumen del espacio"
-            subtitle="Los datos viven localmente hoy, pero la estructura ya esta lista para conectarse luego a NestJS."
+            subtitle="Los datos ya se cargan desde el backend y reflejan el estado real del espacio activo."
           />
           <p className="theme-muted text-sm leading-6">
             Aqui vive ahora el historial principal y detallado para revisar la

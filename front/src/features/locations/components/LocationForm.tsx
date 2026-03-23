@@ -5,13 +5,15 @@ import type { Location } from "@/lib/types";
 type LocationFormValues = {
   name: string;
   gps: string;
-  imageBase64?: string;
+  imageUrl?: string;
+  imageFile?: File | null;
 };
 
 const emptyValues: LocationFormValues = {
   name: "",
   gps: "",
-  imageBase64: ""
+  imageUrl: "",
+  imageFile: null
 };
 
 export const LocationForm = ({
@@ -34,21 +36,17 @@ export const LocationForm = ({
     setValues({
       name: initialValue.name,
       gps: initialValue.gps,
-      imageBase64: initialValue.imageBase64 ?? ""
+      imageUrl: initialValue.imageUrl ?? "",
+      imageFile: null
     });
   }, [initialValue]);
 
   const onImageChange = async (file?: File) => {
     if (!file) {
-      setValues((prev) => ({ ...prev, imageBase64: "" }));
+      setValues((prev) => ({ ...prev, imageFile: null }));
       return;
     }
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      setValues((prev) => ({ ...prev, imageBase64: String(reader.result ?? "") }));
-    };
-    reader.readAsDataURL(file);
+    setValues((prev) => ({ ...prev, imageFile: file }));
   };
 
   return (
@@ -82,6 +80,14 @@ export const LocationForm = ({
           className="pt-2"
         />
       </Field>
+
+      {values.imageUrl ? (
+        <img
+          src={values.imageUrl}
+          alt={values.name || "Ubicacion"}
+          className="h-32 w-full rounded-[24px] object-cover"
+        />
+      ) : null}
 
       <div className="flex gap-3">
         <Button

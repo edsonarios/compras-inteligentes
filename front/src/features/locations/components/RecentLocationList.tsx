@@ -129,9 +129,9 @@ export const RecentLocationList = ({
             </div>
           </div>
 
-          {location.imageBase64 ? (
+          {location.imageUrl ? (
             <img
-              src={location.imageBase64}
+              src={location.imageUrl}
               alt={location.name}
               className="h-40 w-full rounded-[24px] object-cover"
             />

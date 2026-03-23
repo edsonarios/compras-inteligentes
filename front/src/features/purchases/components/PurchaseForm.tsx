@@ -21,7 +21,8 @@ type PurchaseFormValues = {
   quantity: string;
   date: string;
   note: string;
-  imageBase64?: string;
+  imageUrl?: string;
+  imageFile?: File | null;
 };
 
 const defaultValues: PurchaseFormValues = {
@@ -35,7 +36,8 @@ const defaultValues: PurchaseFormValues = {
   quantity: "1",
   date: toInputDate(new Date().toISOString()),
   note: "",
-  imageBase64: ""
+  imageUrl: "",
+  imageFile: null
 };
 
 export const PurchaseForm = ({
@@ -114,7 +116,8 @@ export const PurchaseForm = ({
       quantity: initialValue.quantity.toString(),
       date: toInputDate(initialValue.date),
       note: initialValue.note,
-      imageBase64: initialValue.imageBase64 ?? ""
+      imageUrl: initialValue.imageUrl ?? "",
+      imageFile: null
     });
   }, [initialValue, products, locations]);
 
@@ -176,15 +179,10 @@ export const PurchaseForm = ({
 
   const onImageChange = async (file?: File) => {
     if (!file) {
-      setValues((prev) => ({ ...prev, imageBase64: "" }));
+      setValues((prev) => ({ ...prev, imageFile: null }));
       return;
     }
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      setValues((prev) => ({ ...prev, imageBase64: String(reader.result ?? "") }));
-    };
-    reader.readAsDataURL(file);
+    setValues((prev) => ({ ...prev, imageFile: file }));
   };
 
   return (
@@ -445,6 +443,14 @@ export const PurchaseForm = ({
             className="pt-2"
           />
         </Field>
+
+        {values.imageUrl ? (
+          <img
+            src={values.imageUrl}
+            alt={values.productName || "Compra"}
+            className="h-32 w-full rounded-[24px] object-cover"
+          />
+        ) : null}
       </div>
 
       <div className="flex gap-3">

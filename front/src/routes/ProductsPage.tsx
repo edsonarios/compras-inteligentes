@@ -41,18 +41,18 @@ export const ProductsPage = () => {
 
         <ProductForm
           initialValue={editingProduct}
-          onSubmit={(values) => {
+          onSubmit={async (values) => {
             if (!currentSpaceId) {
               return;
             }
 
             if (editingProduct) {
-              updateProduct(editingProduct.id, values);
+              await updateProduct(editingProduct.id, values);
               setEditingProduct(null);
               return;
             }
 
-            createProduct({ ...values, spaceId: currentSpaceId });
+            await createProduct({ ...values, spaceId: currentSpaceId });
           }}
           onCancel={editingProduct ? () => setEditingProduct(null) : undefined}
         />

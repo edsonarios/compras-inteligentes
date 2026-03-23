@@ -6,6 +6,7 @@ import { RecentPurchaseList } from "@/features/purchases/components/RecentPurcha
 import { useLocationStore } from "@/features/locations/locationStore";
 import { usePurchaseStore } from "@/features/purchases/purchaseStore";
 import { useProductStore } from "@/features/products/productStore";
+import { uploadService } from "@/features/uploads/uploadService";
 import { useSpaceStore } from "@/features/spaces/spaceStore";
 import { scrollToPageTop } from "@/lib/scroll";
 import type { Purchase } from "@/lib/types";
@@ -62,7 +63,7 @@ export const PurchasesPage = () => {
           products={scopedProducts}
           locations={scopedLocations}
           initialValue={editingPurchase}
-          onSubmit={(values) => {
+          onSubmit={async (values) => {
             if (!currentSpaceId) {
               return;
             }
@@ -75,7 +76,7 @@ export const PurchasesPage = () => {
             }
 
             if (!values.productId || values.productId === "__new__") {
-              const nextProduct = createProduct({
+              const nextProduct = await createProduct({
                 spaceId: currentSpaceId,
                 name: values.productName.trim(),
                 category: values.productCategory.trim(),
@@ -83,7 +84,7 @@ export const PurchasesPage = () => {
               });
               productId = nextProduct.id;
             } else {
-              updateProduct(values.productId, {
+              await updateProduct(values.productId, {
                 spaceId: currentSpaceId,
                 name: values.productName.trim(),
                 category: values.productCategory.trim(),
@@ -96,38 +97,67 @@ export const PurchasesPage = () => {
             }
 
             if (!values.locationId || values.locationId === "__new__") {
-              const nextLocation = createLocation({
+              const nextLocation = await createLocation({
                 spaceId: currentSpaceId,
                 name: values.locationName.trim(),
                 gps: "",
-                imageBase64: ""
+                imageUrl: ""
               });
               locationId = nextLocation.id;
             } else {
-              updateLocation(values.locationId, {
+              await updateLocation(values.locationId, {
                 spaceId: currentSpaceId,
                 name: values.locationName.trim()
               });
             }
 
-            const payload = {
+            const basePayload = {
               productId,
               locationId,
               spaceId: currentSpaceId,
               price: Number(values.price),
               quantity: Number(values.quantity),
               date: new Date(values.date).toISOString(),
-              note: values.note,
-              imageBase64: values.imageBase64
+              note: values.note
             };
 
             if (editingPurchase) {
-              updatePurchase(editingPurchase.id, payload);
+              const uploadedImage = values.imageFile
+                ? await uploadService.uploadImage({
+                    file: values.imageFile,
+                    spaceId: currentSpaceId,
+                    entityType: "purchases",
+                    entityId: editingPurchase.id,
+                    fileNameStem: values.productName.trim()
+                  })
+                : null;
+
+              await updatePurchase(editingPurchase.id, {
+                ...basePayload,
+                imageUrl: uploadedImage?.url ?? editingPurchase?.imageUrl ?? values.imageUrl
+              });
               setEditingPurchase(null);
               return;
             }
 
-            createPurchase(payload);
+            const createdPurchase = await createPurchase({
+              ...basePayload,
+              imageUrl: values.imageUrl
+            });
+
+            if (values.imageFile) {
+              const uploadedImage = await uploadService.uploadImage({
+                file: values.imageFile,
+                spaceId: currentSpaceId,
+                entityType: "purchases",
+                entityId: createdPurchase.id,
+                fileNameStem: values.productName.trim()
+              });
+
+              await updatePurchase(createdPurchase.id, {
+                imageUrl: uploadedImage.url
+              });
+            }
           }}
           onCancel={editingPurchase ? () => setEditingPurchase(null) : undefined}
         />

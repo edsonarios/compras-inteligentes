@@ -1,41 +1,40 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
-import { storageKeys } from "@/lib/storage";
 import type { Purchase, PurchaseInput } from "@/lib/types";
 import { purchaseService } from "@/features/purchases/services/purchaseService";
 
 type PurchaseState = {
   purchases: Purchase[];
-  createPurchase: (input: PurchaseInput) => void;
-  updatePurchase: (purchaseId: string, updates: Partial<PurchaseInput>) => void;
-  deletePurchase: (purchaseId: string) => void;
+  loadPurchases: () => Promise<void>;
+  resetPurchases: () => void;
+  createPurchase: (input: PurchaseInput) => Promise<Purchase>;
+  updatePurchase: (purchaseId: string, updates: Partial<PurchaseInput>) => Promise<void>;
+  deletePurchase: (purchaseId: string) => Promise<void>;
 };
 
-export const usePurchaseStore = create<PurchaseState>()(
-  persist(
-    (set) => ({
-      purchases: [],
-      createPurchase: (input) => {
-        const nextPurchase = purchaseService.create(input);
-        set((state) => ({ purchases: [...state.purchases, nextPurchase] }));
-      },
-      updatePurchase: (purchaseId, updates) => {
-        set((state) => ({
-          purchases: state.purchases.map((purchase) =>
-            purchase.id === purchaseId ? { ...purchase, ...updates } : purchase
-          )
-        }));
-      },
-      deletePurchase: (purchaseId) => {
-        set((state) => ({
-          purchases: state.purchases.filter(
-            (purchase) => purchase.id !== purchaseId
-          )
-        }));
-      }
-    }),
-    {
-      name: storageKeys.purchases
-    }
-  )
-);
+export const usePurchaseStore = create<PurchaseState>()((set) => ({
+  purchases: [],
+  loadPurchases: async () => {
+    const purchases = await purchaseService.findAll();
+    set({ purchases });
+  },
+  resetPurchases: () => set({ purchases: [] }),
+  createPurchase: async (input) => {
+    const nextPurchase = await purchaseService.create(input);
+    set((state) => ({ purchases: [...state.purchases, nextPurchase] }));
+    return nextPurchase;
+  },
+  updatePurchase: async (purchaseId, updates) => {
+    const updatedPurchase = await purchaseService.update(purchaseId, updates);
+    set((state) => ({
+      purchases: state.purchases.map((purchase) =>
+        purchase.id === purchaseId ? updatedPurchase : purchase
+      )
+    }));
+  },
+  deletePurchase: async (purchaseId) => {
+    await purchaseService.remove(purchaseId);
+    set((state) => ({
+      purchases: state.purchases.filter((purchase) => purchase.id !== purchaseId)
+    }));
+  }
+}));

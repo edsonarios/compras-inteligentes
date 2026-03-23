@@ -7,7 +7,8 @@ import { authService } from "@/features/auth/services/authService";
 type AuthState = {
   user: User | null;
   isAuthenticated: boolean;
-  login: () => Promise<void>;
+  login: (credentials: { email: string; password: string }) => Promise<void>;
+  register: (payload: { name: string; email: string; password: string }) => Promise<void>;
   logout: () => Promise<void>;
 };
 
@@ -16,8 +17,12 @@ export const useAuthStore = create<AuthState>()(
     (set) => ({
       user: null,
       isAuthenticated: false,
-      login: async () => {
-        const user = await authService.login();
+      login: async (credentials) => {
+        const user = await authService.login(credentials);
+        set({ user, isAuthenticated: true });
+      },
+      register: async (payload) => {
+        const user = await authService.register(payload);
         set({ user, isAuthenticated: true });
       },
       logout: async () => {
