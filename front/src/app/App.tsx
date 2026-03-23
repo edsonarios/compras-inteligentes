@@ -3,6 +3,7 @@ import { BrowserRouter } from "react-router-dom";
 import { useThemeStore } from "@/app/themeStore";
 import { AppNav } from "@/components/AppNav";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { LoadingNotice, Page } from "@/components/ui";
 import { LoginScreen } from "@/features/auth/components/LoginScreen";
 import { useAuthStore } from "@/features/auth/authStore";
 import { bootstrapApp } from "@/app/bootstrap";
@@ -32,7 +33,13 @@ export const App = () => {
   }, [mode]);
 
   if (isBootstrapping) {
-    return null;
+    return (
+      <Page>
+        <div className="pt-24">
+          <LoadingNotice message="Cargando tu espacio y sincronizando informacion..." />
+        </div>
+      </Page>
+    );
   }
 
   if (!isAuthenticated) {

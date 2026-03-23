@@ -16,13 +16,15 @@ export const RecentPurchaseList = ({
   products,
   locations,
   onEdit,
-  onDelete
+  onDelete,
+  busyDeleteId
 }: {
   purchases: Purchase[];
   products: Product[];
   locations: Location[];
   onEdit: (purchase: Purchase) => void;
   onDelete: (purchaseId: string) => void;
+  busyDeleteId?: string | null;
 }) => {
   const [visibleCount, setVisibleCount] = useState(() => Math.min(10, purchases.length));
   const [selectedPurchaseId, setSelectedPurchaseId] = useState<string | null>(null);
@@ -221,7 +223,12 @@ export const RecentPurchaseList = ({
               <Button variant="secondary" className="flex-1" onClick={() => onEdit(purchase)}>
                 Editar
               </Button>
-              <Button variant="ghost" className="flex-1" onClick={() => onDelete(purchase.id)}>
+              <Button
+                variant="ghost"
+                className="flex-1"
+                isLoading={busyDeleteId === purchase.id}
+                onClick={() => onDelete(purchase.id)}
+              >
                 Borrar
               </Button>
             </div>

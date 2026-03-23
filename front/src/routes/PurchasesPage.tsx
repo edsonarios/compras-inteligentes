@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { AppHeader } from "@/components/AppHeader";
-import { Page, Panel } from "@/components/ui";
+import { LoadingNotice, Page, Panel } from "@/components/ui";
 import { PurchaseForm } from "@/features/purchases/components/PurchaseForm";
 import { RecentPurchaseList } from "@/features/purchases/components/RecentPurchaseList";
 import { useLocationStore } from "@/features/locations/locationStore";
@@ -24,6 +24,8 @@ export const PurchasesPage = () => {
   const updatePurchase = usePurchaseStore((state) => state.updatePurchase);
   const deletePurchase = usePurchaseStore((state) => state.deletePurchase);
   const [editingPurchase, setEditingPurchase] = useState<Purchase | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deletingPurchaseId, setDeletingPurchaseId] = useState<string | null>(null);
 
   const scopedProducts = useMemo(
     () => products.filter((product) => product.spaceId === currentSpaceId),
@@ -50,6 +52,10 @@ export const PurchasesPage = () => {
           description="Vista simple de las ultimas compras creadas dentro del espacio activo."
         />
 
+        {isSubmitting ? (
+          <LoadingNotice message="Guardando compra, procesando imagen y actualizando datos..." />
+        ) : null}
+
         {scopedProducts.length === 0 ? (
           <Panel>
             <p className="theme-muted text-sm leading-6">
@@ -68,97 +74,103 @@ export const PurchasesPage = () => {
               return;
             }
 
-            let productId = values.productId;
-            let locationId = values.locationId;
+            setIsSubmitting(true);
+            try {
+              let productId = values.productId;
+              let locationId = values.locationId;
 
-            if (!values.productName.trim()) {
-              return;
-            }
+              if (!values.productName.trim()) {
+                return;
+              }
 
-            if (!values.productId || values.productId === "__new__") {
-              const nextProduct = await createProduct({
+              if (!values.productId || values.productId === "__new__") {
+                const nextProduct = await createProduct({
+                  spaceId: currentSpaceId,
+                  name: values.productName.trim(),
+                  category: values.productCategory.trim(),
+                  description: values.productDescription.trim()
+                });
+                productId = nextProduct.id;
+              } else {
+                await updateProduct(values.productId, {
+                  spaceId: currentSpaceId,
+                  name: values.productName.trim(),
+                  category: values.productCategory.trim(),
+                  description: values.productDescription.trim()
+                });
+              }
+
+              if (!values.locationName.trim()) {
+                return;
+              }
+
+              if (!values.locationId || values.locationId === "__new__") {
+                const nextLocation = await createLocation({
+                  spaceId: currentSpaceId,
+                  name: values.locationName.trim(),
+                  gps: "",
+                  imageUrl: ""
+                });
+                locationId = nextLocation.id;
+              } else {
+                await updateLocation(values.locationId, {
+                  spaceId: currentSpaceId,
+                  name: values.locationName.trim()
+                });
+              }
+
+              const basePayload = {
+                productId,
+                locationId,
                 spaceId: currentSpaceId,
-                name: values.productName.trim(),
-                category: values.productCategory.trim(),
-                description: values.productDescription.trim()
-              });
-              productId = nextProduct.id;
-            } else {
-              await updateProduct(values.productId, {
-                spaceId: currentSpaceId,
-                name: values.productName.trim(),
-                category: values.productCategory.trim(),
-                description: values.productDescription.trim()
-              });
-            }
+                price: Number(values.price),
+                quantity: Number(values.quantity),
+                date: new Date(values.date).toISOString(),
+                note: values.note
+              };
 
-            if (!values.locationName.trim()) {
-              return;
-            }
+              if (editingPurchase) {
+                const uploadedImage = values.imageFile
+                  ? await uploadService.uploadImage({
+                      file: values.imageFile,
+                      spaceId: currentSpaceId,
+                      entityType: "purchases",
+                      entityId: editingPurchase.id,
+                      fileNameStem: values.productName.trim()
+                    })
+                  : null;
 
-            if (!values.locationId || values.locationId === "__new__") {
-              const nextLocation = await createLocation({
-                spaceId: currentSpaceId,
-                name: values.locationName.trim(),
-                gps: "",
-                imageUrl: ""
-              });
-              locationId = nextLocation.id;
-            } else {
-              await updateLocation(values.locationId, {
-                spaceId: currentSpaceId,
-                name: values.locationName.trim()
-              });
-            }
+                await updatePurchase(editingPurchase.id, {
+                  ...basePayload,
+                  imageUrl: uploadedImage?.url ?? editingPurchase?.imageUrl ?? values.imageUrl
+                });
+                setEditingPurchase(null);
+                return;
+              }
 
-            const basePayload = {
-              productId,
-              locationId,
-              spaceId: currentSpaceId,
-              price: Number(values.price),
-              quantity: Number(values.quantity),
-              date: new Date(values.date).toISOString(),
-              note: values.note
-            };
-
-            if (editingPurchase) {
-              const uploadedImage = values.imageFile
-                ? await uploadService.uploadImage({
-                    file: values.imageFile,
-                    spaceId: currentSpaceId,
-                    entityType: "purchases",
-                    entityId: editingPurchase.id,
-                    fileNameStem: values.productName.trim()
-                  })
-                : null;
-
-              await updatePurchase(editingPurchase.id, {
+              const createdPurchase = await createPurchase({
                 ...basePayload,
-                imageUrl: uploadedImage?.url ?? editingPurchase?.imageUrl ?? values.imageUrl
-              });
-              setEditingPurchase(null);
-              return;
-            }
-
-            const createdPurchase = await createPurchase({
-              ...basePayload,
-              imageUrl: values.imageUrl
-            });
-
-            if (values.imageFile) {
-              const uploadedImage = await uploadService.uploadImage({
-                file: values.imageFile,
-                spaceId: currentSpaceId,
-                entityType: "purchases",
-                entityId: createdPurchase.id,
-                fileNameStem: values.productName.trim()
+                imageUrl: values.imageUrl
               });
 
-              await updatePurchase(createdPurchase.id, {
-                imageUrl: uploadedImage.url
-              });
+              if (values.imageFile) {
+                const uploadedImage = await uploadService.uploadImage({
+                  file: values.imageFile,
+                  spaceId: currentSpaceId,
+                  entityType: "purchases",
+                  entityId: createdPurchase.id,
+                  fileNameStem: values.productName.trim()
+                });
+
+                await updatePurchase(createdPurchase.id, {
+                  imageUrl: uploadedImage.url
+                });
+              }
+            } finally {
+              setIsSubmitting(false);
             }
           }}
+          isSubmitting={isSubmitting}
           onCancel={editingPurchase ? () => setEditingPurchase(null) : undefined}
         />
 
@@ -170,7 +182,15 @@ export const PurchasesPage = () => {
             setEditingPurchase(purchase);
             scrollToPageTop();
           }}
-          onDelete={deletePurchase}
+          onDelete={async (purchaseId) => {
+            setDeletingPurchaseId(purchaseId);
+            try {
+              await deletePurchase(purchaseId);
+            } finally {
+              setDeletingPurchaseId(null);
+            }
+          }}
+          busyDeleteId={deletingPurchaseId}
         />
       </div>
     </Page>

@@ -45,13 +45,15 @@ export const PurchaseForm = ({
   locations,
   initialValue,
   onSubmit,
-  onCancel
+  onCancel,
+  isSubmitting = false
 }: {
   products: Product[];
   locations: Location[];
   initialValue?: Purchase | null;
-  onSubmit: (values: PurchaseFormValues) => void;
+  onSubmit: (values: PurchaseFormValues) => Promise<void> | void;
   onCancel?: () => void;
+  isSubmitting?: boolean;
 }) => {
   const [values, setValues] = useState<PurchaseFormValues>(defaultValues);
   const [isProductPickerOpen, setIsProductPickerOpen] = useState(false);
@@ -456,11 +458,12 @@ export const PurchaseForm = ({
       <div className="flex gap-3">
         <Button
           className="flex-1"
-          onClick={() => {
+          isLoading={isSubmitting}
+          onClick={async () => {
             if ((isCreatingProduct && !values.productName.trim()) || !values.locationName.trim()) {
               return;
             }
-            onSubmit(values);
+            await onSubmit(values);
             if (!initialValue) {
               setValues(defaultValues);
             }
@@ -469,7 +472,7 @@ export const PurchaseForm = ({
           {initialValue ? "Guardar compra" : "Agregar compra"}
         </Button>
         {onCancel ? (
-          <Button className="flex-1" variant="secondary" onClick={onCancel}>
+          <Button className="flex-1" variant="secondary" onClick={onCancel} disabled={isSubmitting}>
             Cancelar
           </Button>
         ) : null}

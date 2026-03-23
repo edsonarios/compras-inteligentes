@@ -1,9 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { CreatePurchaseDto } from './dto/create-purchase.dto';
-import { UpdatePurchaseDto } from './dto/update-purchase.dto';
-import { Purchase } from './entities/purchase.entity';
+import { Injectable, NotFoundException } from '@nestjs/common'
+import { InjectRepository } from '@nestjs/typeorm'
+import { Repository } from 'typeorm'
+import { CreatePurchaseDto } from './dto/create-purchase.dto'
+import { UpdatePurchaseDto } from './dto/update-purchase.dto'
+import { Purchase } from './entities/purchase.entity'
 
 @Injectable()
 export class PurchasesService {
@@ -13,13 +13,13 @@ export class PurchasesService {
   ) {}
 
   create(createPurchaseDto: CreatePurchaseDto) {
-    const { date, ...rest } = createPurchaseDto;
+    const { date, ...rest } = createPurchaseDto
     const purchase = this.purchasesRepository.create({
       ...rest,
       purchasedAt: new Date(date),
-    });
+    })
 
-    return this.purchasesRepository.save(purchase);
+    return this.purchasesRepository.save(purchase)
   }
 
   findAll() {
@@ -29,7 +29,7 @@ export class PurchasesService {
         location: true,
       },
       order: { purchasedAt: 'DESC' },
-    });
+    })
   }
 
   async findOne(id: string) {
@@ -40,30 +40,30 @@ export class PurchasesService {
         location: true,
         space: true,
       },
-    });
+    })
 
     if (!purchase) {
-      throw new NotFoundException(`Purchase ${id} not found`);
+      throw new NotFoundException(`Purchase ${id} not found`)
     }
 
-    return purchase;
+    return purchase
   }
 
   async update(id: string, updatePurchaseDto: UpdatePurchaseDto) {
-    const purchase = await this.findOne(id);
-    const { date, ...rest } = updatePurchaseDto;
+    const purchase = await this.findOne(id)
+    const { date, ...rest } = updatePurchaseDto
 
     Object.assign(purchase, {
       ...rest,
       purchasedAt: date !== undefined ? new Date(date) : purchase.purchasedAt,
-    });
+    })
 
-    return this.purchasesRepository.save(purchase);
+    return this.purchasesRepository.save(purchase)
   }
 
   async remove(id: string) {
-    const purchase = await this.findOne(id);
-    await this.purchasesRepository.remove(purchase);
-    return { id };
+    const purchase = await this.findOne(id)
+    await this.purchasesRepository.remove(purchase)
+    return { id }
   }
 }

@@ -7,37 +7,37 @@ import {
   OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
-} from 'typeorm';
-import { Purchase } from '../../purchases/entities/purchase.entity';
-import { Space } from '../../spaces/entities/space.entity';
+} from 'typeorm'
+import { Purchase } from '../../purchases/entities/purchase.entity'
+import { Space } from '../../spaces/entities/space.entity'
 
-@Entity('locations')
+@Entity('ci-locations')
 export class Location {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id: string
 
   @Column()
-  spaceId: string;
+  spaceId: string
 
   @Column()
-  name: string;
+  name: string
 
   @Column()
-  gps: string;
+  gps: string
 
   @Column({ type: 'text', nullable: true })
-  imageUrl?: string | null;
+  imageUrl?: string | null
 
   @ManyToOne(() => Space, (space) => space.locations, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'spaceId' })
-  space: Space;
+  space: Space
 
   @OneToMany(() => Purchase, (purchase) => purchase.location)
-  purchases: Purchase[];
+  purchases: Purchase[]
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
-  createdAt: Date;
+  createdAt: Date
 
   @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
-  updatedAt: Date;
+  updatedAt: Date
 }

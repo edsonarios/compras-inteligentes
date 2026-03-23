@@ -12,11 +12,13 @@ import type { Location } from "@/lib/types";
 export const RecentLocationList = ({
   locations,
   onEdit,
-  onDelete
+  onDelete,
+  busyDeleteId
 }: {
   locations: Location[];
   onEdit: (location: Location) => void;
   onDelete: (locationId: string) => void;
+  busyDeleteId?: string | null;
 }) => {
   const [visibleCount, setVisibleCount] = useState(() => Math.min(10, locations.length));
   const [search, setSearch] = useState("");
@@ -123,7 +125,12 @@ export const RecentLocationList = ({
               <Button variant="secondary" className="px-3" onClick={() => onEdit(location)}>
                 Editar
               </Button>
-              <Button variant="ghost" className="px-3" onClick={() => onDelete(location.id)}>
+              <Button
+                variant="ghost"
+                className="px-3"
+                isLoading={busyDeleteId === location.id}
+                onClick={() => onDelete(location.id)}
+              >
                 Borrar
               </Button>
             </div>

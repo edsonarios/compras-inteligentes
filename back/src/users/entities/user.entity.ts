@@ -5,33 +5,33 @@ import {
   OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
-} from 'typeorm';
-import { Space } from '../../spaces/entities/space.entity';
-import { SpaceMember } from '../../spaces/entities/space-member.entity';
+} from 'typeorm'
+import { Space } from '../../spaces/entities/space.entity'
+import { SpaceMember } from '../../spaces/entities/space-member.entity'
 
-@Entity('users')
+@Entity('ci-users')
 export class User {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id: string
 
   @Column({ unique: true })
-  email: string;
+  email: string
 
   @Column()
-  name: string;
+  name: string
 
   @Column({ name: 'password_hash', select: false })
-  passwordHash: string;
+  passwordHash: string
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
-  createdAt: Date;
+  createdAt: Date
 
   @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
-  updatedAt: Date;
+  updatedAt: Date
 
   @OneToMany(() => Space, (space) => space.owner)
-  ownedSpaces: Space[];
+  ownedSpaces: Space[]
 
   @OneToMany(() => SpaceMember, (spaceMember) => spaceMember.user)
-  memberships: SpaceMember[];
+  memberships: SpaceMember[]
 }

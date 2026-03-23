@@ -1,17 +1,17 @@
-import { IsString, IsUUID, MaxLength } from 'class-validator';
+import { IsString, IsUUID, MaxLength } from 'class-validator'
 
 export class CreateProductDto {
   @IsUUID()
-  spaceId: string;
+  spaceId: string
 
   @IsString()
   @MaxLength(160)
-  name: string;
+  name: string
 
   @IsString()
   @MaxLength(120)
-  category: string;
+  category: string
 
   @IsString()
-  description: string;
+  description: string
 }

@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { AppHeader } from "@/components/AppHeader";
-import { Page } from "@/components/ui";
+import { LoadingNotice, Page } from "@/components/ui";
 import { ProductForm } from "@/features/products/components/ProductForm";
 import { RecentProductList } from "@/features/products/components/RecentProductList";
 import { useProductStore } from "@/features/products/productStore";
@@ -17,6 +17,8 @@ export const ProductsPage = () => {
   const deleteProduct = useProductStore((state) => state.deleteProduct);
   const purchases = usePurchaseStore((state) => state.purchases);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deletingProductId, setDeletingProductId] = useState<string | null>(null);
 
   const scopedProducts = useMemo(
     () =>
@@ -39,6 +41,10 @@ export const ProductsPage = () => {
           description="Vista simple de los ultimos productos creados en el espacio activo."
         />
 
+        {isSubmitting ? (
+          <LoadingNotice message="Guardando producto..." />
+        ) : null}
+
         <ProductForm
           initialValue={editingProduct}
           onSubmit={async (values) => {
@@ -46,14 +52,20 @@ export const ProductsPage = () => {
               return;
             }
 
-            if (editingProduct) {
-              await updateProduct(editingProduct.id, values);
-              setEditingProduct(null);
-              return;
-            }
+            setIsSubmitting(true);
+            try {
+              if (editingProduct) {
+                await updateProduct(editingProduct.id, values);
+                setEditingProduct(null);
+                return;
+              }
 
-            await createProduct({ ...values, spaceId: currentSpaceId });
+              await createProduct({ ...values, spaceId: currentSpaceId });
+            } finally {
+              setIsSubmitting(false);
+            }
           }}
+          isSubmitting={isSubmitting}
           onCancel={editingProduct ? () => setEditingProduct(null) : undefined}
         />
 
@@ -64,7 +76,15 @@ export const ProductsPage = () => {
             setEditingProduct(product);
             scrollToPageTop();
           }}
-          onDelete={deleteProduct}
+          onDelete={async (productId) => {
+            setDeletingProductId(productId);
+            try {
+              await deleteProduct(productId);
+            } finally {
+              setDeletingProductId(null);
+            }
+          }}
+          busyDeleteId={deletingProductId}
         />
       </div>
     </Page>

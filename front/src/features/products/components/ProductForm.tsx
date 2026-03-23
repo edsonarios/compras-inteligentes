@@ -17,11 +17,13 @@ const emptyValues: ProductFormValues = {
 export const ProductForm = ({
   initialValue,
   onSubmit,
-  onCancel
+  onCancel,
+  isSubmitting = false
 }: {
   initialValue?: Product | null;
-  onSubmit: (values: ProductFormValues) => void;
+  onSubmit: (values: ProductFormValues) => Promise<void> | void;
   onCancel?: () => void;
+  isSubmitting?: boolean;
 }) => {
   const [values, setValues] = useState<ProductFormValues>(emptyValues);
 
@@ -78,8 +80,9 @@ export const ProductForm = ({
       <div className="flex gap-3">
         <Button
           className="flex-1"
-          onClick={() => {
-            onSubmit(values);
+          isLoading={isSubmitting}
+          onClick={async () => {
+            await onSubmit(values);
             if (!isEditing) {
               setValues(emptyValues);
             }
@@ -88,7 +91,7 @@ export const ProductForm = ({
           {isEditing ? "Guardar cambios" : "Crear producto"}
         </Button>
         {onCancel ? (
-          <Button className="flex-1" variant="secondary" onClick={onCancel}>
+          <Button className="flex-1" variant="secondary" onClick={onCancel} disabled={isSubmitting}>
             Cancelar
           </Button>
         ) : null}

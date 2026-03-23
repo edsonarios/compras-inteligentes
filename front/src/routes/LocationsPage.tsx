@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { AppHeader } from "@/components/AppHeader";
-import { Page } from "@/components/ui";
+import { LoadingNotice, Page } from "@/components/ui";
 import { LocationForm } from "@/features/locations/components/LocationForm";
 import { RecentLocationList } from "@/features/locations/components/RecentLocationList";
 import { useLocationStore } from "@/features/locations/locationStore";
@@ -16,6 +16,8 @@ export const LocationsPage = () => {
   const updateLocation = useLocationStore((state) => state.updateLocation);
   const deleteLocation = useLocationStore((state) => state.deleteLocation);
   const [editingLocation, setEditingLocation] = useState<Location | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deletingLocationId, setDeletingLocationId] = useState<string | null>(null);
 
   const scopedLocations = useMemo(
     () =>
@@ -34,36 +36,45 @@ export const LocationsPage = () => {
           description="Administra referencias mas detalladas de tus lugares de compra."
         />
 
+        {isSubmitting ? (
+          <LoadingNotice message="Guardando ubicacion y procesando imagen..." />
+        ) : null}
+
         <LocationForm
           initialValue={editingLocation}
           onSubmit={async (values) => {
             if (!currentSpaceId) {
               return;
             }
+            setIsSubmitting(true);
+            try {
+              const uploadedImage = values.imageFile
+                ? await uploadService.uploadImage({
+                    file: values.imageFile,
+                    spaceId: currentSpaceId,
+                    entityType: "locations"
+                  })
+                : null;
 
-            const uploadedImage = values.imageFile
-              ? await uploadService.uploadImage({
-                  file: values.imageFile,
-                  spaceId: currentSpaceId,
-                  entityType: "locations"
-                })
-              : null;
+              const payload = {
+                name: values.name,
+                gps: values.gps,
+                spaceId: currentSpaceId,
+                imageUrl: uploadedImage?.url ?? editingLocation?.imageUrl ?? values.imageUrl
+              };
 
-            const payload = {
-              name: values.name,
-              gps: values.gps,
-              spaceId: currentSpaceId,
-              imageUrl: uploadedImage?.url ?? editingLocation?.imageUrl ?? values.imageUrl
-            };
+              if (editingLocation) {
+                await updateLocation(editingLocation.id, payload);
+                setEditingLocation(null);
+                return;
+              }
 
-            if (editingLocation) {
-              await updateLocation(editingLocation.id, payload);
-              setEditingLocation(null);
-              return;
+              await createLocation(payload);
+            } finally {
+              setIsSubmitting(false);
             }
-
-            await createLocation(payload);
           }}
+          isSubmitting={isSubmitting}
           onCancel={editingLocation ? () => setEditingLocation(null) : undefined}
         />
 
@@ -73,7 +84,15 @@ export const LocationsPage = () => {
             setEditingLocation(location);
             scrollToPageTop();
           }}
-          onDelete={deleteLocation}
+          onDelete={async (locationId) => {
+            setDeletingLocationId(locationId);
+            try {
+              await deleteLocation(locationId);
+            } finally {
+              setDeletingLocationId(null);
+            }
+          }}
+          busyDeleteId={deletingLocationId}
         />
       </div>
     </Page>

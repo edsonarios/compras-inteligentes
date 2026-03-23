@@ -1,10 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { CreateSpaceDto } from './dto/create-space.dto';
-import { UpdateSpaceDto } from './dto/update-space.dto';
-import { SpaceMember } from './entities/space-member.entity';
-import { Space } from './entities/space.entity';
+import { Injectable, NotFoundException } from '@nestjs/common'
+import { InjectRepository } from '@nestjs/typeorm'
+import { Repository } from 'typeorm'
+import { CreateSpaceDto } from './dto/create-space.dto'
+import { UpdateSpaceDto } from './dto/update-space.dto'
+import { SpaceMember } from './entities/space-member.entity'
+import { Space } from './entities/space.entity'
 
 @Injectable()
 export class SpacesService {
@@ -18,15 +18,15 @@ export class SpacesService {
   async create(createSpaceDto: CreateSpaceDto) {
     const members = (createSpaceDto.members ?? []).map((member) =>
       this.spaceMembersRepository.create(member),
-    );
+    )
 
     const space = this.spacesRepository.create({
       name: createSpaceDto.name,
       ownerId: createSpaceDto.ownerId,
       members,
-    });
+    })
 
-    return this.spacesRepository.save(space);
+    return this.spacesRepository.save(space)
   }
 
   findAll() {
@@ -36,7 +36,7 @@ export class SpacesService {
         owner: true,
       },
       order: { createdAt: 'DESC' },
-    });
+    })
   }
 
   async findOne(id: string) {
@@ -49,42 +49,42 @@ export class SpacesService {
         locations: true,
         purchases: true,
       },
-    });
+    })
 
     if (!space) {
-      throw new NotFoundException(`Space ${id} not found`);
+      throw new NotFoundException(`Space ${id} not found`)
     }
 
-    return space;
+    return space
   }
 
   async update(id: string, updateSpaceDto: UpdateSpaceDto) {
-    const space = await this.findOne(id);
+    const space = await this.findOne(id)
 
     if (updateSpaceDto.name !== undefined) {
-      space.name = updateSpaceDto.name;
+      space.name = updateSpaceDto.name
     }
 
     if (updateSpaceDto.ownerId !== undefined) {
-      space.ownerId = updateSpaceDto.ownerId;
+      space.ownerId = updateSpaceDto.ownerId
     }
 
     if (updateSpaceDto.members !== undefined) {
-      await this.spaceMembersRepository.delete({ spaceId: id });
+      await this.spaceMembersRepository.delete({ spaceId: id })
       space.members = updateSpaceDto.members.map((member) =>
         this.spaceMembersRepository.create({
           ...member,
           spaceId: id,
         }),
-      );
+      )
     }
 
-    return this.spacesRepository.save(space);
+    return this.spacesRepository.save(space)
   }
 
   async remove(id: string) {
-    const space = await this.findOne(id);
-    await this.spacesRepository.remove(space);
-    return { id };
+    const space = await this.findOne(id)
+    await this.spacesRepository.remove(space)
+    return { id }
   }
 }

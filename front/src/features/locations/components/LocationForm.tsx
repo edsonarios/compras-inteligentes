@@ -19,11 +19,13 @@ const emptyValues: LocationFormValues = {
 export const LocationForm = ({
   initialValue,
   onSubmit,
-  onCancel
+  onCancel,
+  isSubmitting = false
 }: {
   initialValue?: Location | null;
-  onSubmit: (values: LocationFormValues) => void;
+  onSubmit: (values: LocationFormValues) => Promise<void> | void;
   onCancel?: () => void;
+  isSubmitting?: boolean;
 }) => {
   const [values, setValues] = useState<LocationFormValues>(emptyValues);
 
@@ -92,11 +94,12 @@ export const LocationForm = ({
       <div className="flex gap-3">
         <Button
           className="flex-1"
-          onClick={() => {
+          isLoading={isSubmitting}
+          onClick={async () => {
             if (!values.name.trim()) {
               return;
             }
-            onSubmit(values);
+            await onSubmit(values);
             if (!initialValue) {
               setValues(emptyValues);
             }
@@ -105,7 +108,7 @@ export const LocationForm = ({
           {initialValue ? "Guardar cambios" : "Crear ubicacion"}
         </Button>
         {onCancel ? (
-          <Button className="flex-1" variant="secondary" onClick={onCancel}>
+          <Button className="flex-1" variant="secondary" onClick={onCancel} disabled={isSubmitting}>
             Cancelar
           </Button>
         ) : null}

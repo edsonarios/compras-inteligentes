@@ -35,10 +35,13 @@ export const Button = ({
   className,
   variant = "primary",
   type = "button",
+  isLoading = false,
+  disabled,
   ...props
 }: PropsWithChildren<
   ButtonHTMLAttributes<HTMLButtonElement> & {
     variant?: "primary" | "secondary" | "ghost";
+    isLoading?: boolean;
   }
 >) => (
   <button
@@ -51,9 +54,38 @@ export const Button = ({
       className
     )}
     {...props}
+    disabled={disabled || isLoading}
   >
-    {children}
+    {isLoading ? (
+      <>
+        <Spinner className="mr-2 h-4 w-4" />
+        <span>{children}</span>
+      </>
+    ) : (
+      children
+    )}
   </button>
+);
+
+export const Spinner = ({ className }: { className?: string }) => (
+  <span
+    className={cn(
+      "inline-block h-5 w-5 animate-spin rounded-full border-2 border-current border-r-transparent",
+      className
+    )}
+    aria-hidden="true"
+  />
+);
+
+export const LoadingNotice = ({
+  message = "Cargando informacion..."
+}: {
+  message?: string;
+}) => (
+  <Panel className="flex items-center gap-3">
+    <Spinner />
+    <p className="theme-muted text-sm">{message}</p>
+  </Panel>
 );
 
 export const Field = ({

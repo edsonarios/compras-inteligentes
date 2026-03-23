@@ -1,20 +1,20 @@
-import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { AuthModule } from './auth/auth.module';
-import { Location } from './locations/entities/location.entity';
-import { LocationsModule } from './locations/locations.module';
-import { Product } from './products/entities/product.entity';
-import { ProductsModule } from './products/products.module';
-import { Purchase } from './purchases/entities/purchase.entity';
-import { PurchasesModule } from './purchases/purchases.module';
-import { SpaceMember } from './spaces/entities/space-member.entity';
-import { Space } from './spaces/entities/space.entity';
-import { SpacesModule } from './spaces/spaces.module';
-import { UploadsModule } from './uploads/uploads.module';
-import { User } from './users/entities/user.entity';
-import { UsersModule } from './users/users.module';
-import { VercelLogger } from './common/nestConfig/logger';
+import { Module } from '@nestjs/common'
+import { ConfigModule } from '@nestjs/config'
+import { TypeOrmModule } from '@nestjs/typeorm'
+import { AuthModule } from './auth/auth.module'
+import { Location } from './locations/entities/location.entity'
+import { LocationsModule } from './locations/locations.module'
+import { Product } from './products/entities/product.entity'
+import { ProductsModule } from './products/products.module'
+import { Purchase } from './purchases/entities/purchase.entity'
+import { PurchasesModule } from './purchases/purchases.module'
+import { SpaceMember } from './spaces/entities/space-member.entity'
+import { Space } from './spaces/entities/space.entity'
+import { SpacesModule } from './spaces/spaces.module'
+import { UploadsModule } from './uploads/uploads.module'
+import { User } from './users/entities/user.entity'
+import { UsersModule } from './users/users.module'
+import { VercelLogger } from './common/nestConfig/logger'
 const { STAGE } = process.env
 const logger = new VercelLogger('AppModule')
 
@@ -23,7 +23,7 @@ const logger = new VercelLogger('AppModule')
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-      TypeOrmModule.forRootAsync({
+    TypeOrmModule.forRootAsync({
       useFactory: async () => {
         const credentialsBase = {
           host: process.env.DB_HOST,
@@ -44,7 +44,7 @@ const logger = new VercelLogger('AppModule')
           password: credentialsBase.password,
           database: credentialsBase.database,
           autoLoadEntities: true,
-          synchronize: true,
+          synchronize: false,
           logging: false,
           ssl: { rejectUnauthorized: false },
           entities: [User, Space, SpaceMember, Product, Location, Purchase],

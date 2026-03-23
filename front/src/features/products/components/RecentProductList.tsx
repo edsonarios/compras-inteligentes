@@ -20,12 +20,14 @@ export const RecentProductList = ({
   products,
   purchases,
   onEdit,
-  onDelete
+  onDelete,
+  busyDeleteId
 }: {
   products: Product[];
   purchases: Purchase[];
   onEdit: (product: Product) => void;
   onDelete: (productId: string) => void;
+  busyDeleteId?: string | null;
 }) => {
   const [visibleCount, setVisibleCount] = useState(() => Math.min(10, products.length));
   const [search, setSearch] = useState("");
@@ -178,7 +180,12 @@ export const RecentProductList = ({
                 <Button variant="secondary" className="px-3" onClick={() => onEdit(product)}>
                   Editar
                 </Button>
-                <Button variant="ghost" className="px-3" onClick={() => onDelete(product.id)}>
+                <Button
+                  variant="ghost"
+                  className="px-3"
+                  isLoading={busyDeleteId === product.id}
+                  onClick={() => onDelete(product.id)}
+                >
                   Borrar
                 </Button>
               </div>

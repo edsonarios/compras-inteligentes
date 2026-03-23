@@ -1,17 +1,17 @@
-import { IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
+import { IsOptional, IsString, IsUUID, MaxLength } from 'class-validator'
 
 export class CreateLocationDto {
   @IsUUID()
-  spaceId: string;
+  spaceId: string
 
   @IsString()
   @MaxLength(160)
-  name: string;
+  name: string
 
   @IsString()
-  gps: string;
+  gps: string
 
   @IsOptional()
   @IsString()
-  imageUrl?: string;
+  imageUrl?: string
 }

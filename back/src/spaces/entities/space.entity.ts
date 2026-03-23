@@ -7,45 +7,45 @@ import {
   OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
-} from 'typeorm';
-import { Location } from '../../locations/entities/location.entity';
-import { Product } from '../../products/entities/product.entity';
-import { Purchase } from '../../purchases/entities/purchase.entity';
-import { User } from '../../users/entities/user.entity';
-import { SpaceMember } from './space-member.entity';
+} from 'typeorm'
+import { Location } from '../../locations/entities/location.entity'
+import { Product } from '../../products/entities/product.entity'
+import { Purchase } from '../../purchases/entities/purchase.entity'
+import { User } from '../../users/entities/user.entity'
+import { SpaceMember } from './space-member.entity'
 
-@Entity('spaces')
+@Entity('ci-spaces')
 export class Space {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id: string
 
   @Column()
-  name: string;
+  name: string
 
   @Column()
-  ownerId: string;
+  ownerId: string
 
   @ManyToOne(() => User, (user) => user.ownedSpaces, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'ownerId' })
-  owner: User;
+  owner: User
 
   @OneToMany(() => SpaceMember, (spaceMember) => spaceMember.space, {
     cascade: ['insert', 'update'],
   })
-  members: SpaceMember[];
+  members: SpaceMember[]
 
   @OneToMany(() => Product, (product) => product.space)
-  products: Product[];
+  products: Product[]
 
   @OneToMany(() => Location, (location) => location.space)
-  locations: Location[];
+  locations: Location[]
 
   @OneToMany(() => Purchase, (purchase) => purchase.space)
-  purchases: Purchase[];
+  purchases: Purchase[]
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
-  createdAt: Date;
+  createdAt: Date
 
   @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
-  updatedAt: Date;
+  updatedAt: Date
 }

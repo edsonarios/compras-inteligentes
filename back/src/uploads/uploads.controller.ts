@@ -5,17 +5,17 @@ import {
   Post,
   UploadedFile,
   UseInterceptors,
-} from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { memoryStorage } from 'multer';
-import { UploadImageDto } from './dto/upload-image.dto';
-import { UploadsService } from './uploads.service';
+} from '@nestjs/common'
+import { FileInterceptor } from '@nestjs/platform-express'
+import { memoryStorage } from 'multer'
+import { UploadImageDto } from './dto/upload-image.dto'
+import { UploadsService } from './uploads.service'
 
 type UploadedImageFile = {
-  buffer: Buffer;
-  mimetype: string;
-  originalname: string;
-};
+  buffer: Buffer
+  mimetype: string
+  originalname: string
+}
 
 @Controller('uploads')
 export class UploadsController {
@@ -35,7 +35,7 @@ export class UploadsController {
     @Body() uploadImageDto: UploadImageDto,
   ) {
     if (!file) {
-      throw new BadRequestException('Image file is required');
+      throw new BadRequestException('Image file is required')
     }
 
     return this.uploadsService.uploadImage({
@@ -44,6 +44,6 @@ export class UploadsController {
       entityType: uploadImageDto.entityType,
       entityId: uploadImageDto.entityId,
       fileNameStem: uploadImageDto.fileNameStem,
-    });
+    })
   }
 }

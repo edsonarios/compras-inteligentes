@@ -1,33 +1,40 @@
-import { Transform } from 'class-transformer';
-import { IsDateString, IsNumber, IsOptional, IsString, IsUUID, Min } from 'class-validator';
+import { Transform } from 'class-transformer'
+import {
+  IsDateString,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Min,
+} from 'class-validator'
 
 export class CreatePurchaseDto {
   @IsUUID()
-  spaceId: string;
+  spaceId: string
 
   @IsUUID()
-  productId: string;
+  productId: string
 
   @IsUUID()
-  locationId: string;
+  locationId: string
 
   @Transform(({ value }) => Number(value))
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
-  price: number;
+  price: number
 
   @Transform(({ value }) => Number(value))
   @IsNumber({ maxDecimalPlaces: 0 })
   @Min(1)
-  quantity: number;
+  quantity: number
 
   @IsDateString()
-  date: string;
+  date: string
 
   @IsString()
-  note: string;
+  note: string
 
   @IsOptional()
   @IsString()
-  imageUrl?: string;
+  imageUrl?: string
 }

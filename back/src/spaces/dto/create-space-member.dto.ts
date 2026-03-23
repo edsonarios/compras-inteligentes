@@ -1,10 +1,10 @@
-import { IsEmail, IsOptional, IsUUID } from 'class-validator';
+import { IsEmail, IsOptional, IsUUID } from 'class-validator'
 
 export class CreateSpaceMemberDto {
   @IsEmail()
-  email: string;
+  email: string
 
   @IsOptional()
   @IsUUID()
-  userId?: string;
+  userId?: string
 }
