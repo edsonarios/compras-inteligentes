@@ -1,7 +1,8 @@
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
 import { Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
-import * as sharp from 'sharp'
+// import * as sharp from 'sharp'
+import sharp from 'sharp' // work in prod
 
 type UploadedImageFile = {
   buffer: Buffer
