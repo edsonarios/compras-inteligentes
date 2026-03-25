@@ -9,7 +9,7 @@ import {
   type SortRule
 } from "@/lib/sorting";
 import type { Location, Product, Purchase } from "@/lib/types";
-import { currency, formatDate } from "@/lib/utils";
+import { currency, formatDateTime, splitImageUrls } from "@/lib/utils";
 
 export const PurchaseList = ({
   purchases,
@@ -30,6 +30,8 @@ export const PurchaseList = ({
 }) => {
   const [search, setSearch] = useState("");
   const [selectedPurchaseId, setSelectedPurchaseId] = useState<string | null>(null);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [imageZoom, setImageZoom] = useState(1);
   const [visibleCount, setVisibleCount] = useState(() => Math.min(10, purchases.length));
   const previousLength = useRef(purchases.length);
   const categoryOptions = useMemo(
@@ -101,6 +103,7 @@ export const PurchaseList = ({
   const selectedLocation = selectedPurchase
     ? locations.find((item) => item.id === selectedPurchase.locationId)
     : null;
+  const selectedPurchaseImages = splitImageUrls(selectedPurchase?.imageUrl);
 
   useEffect(() => {
     if (purchases.length > previousLength.current) {
@@ -170,6 +173,7 @@ export const PurchaseList = ({
         sortedPurchases.slice(0, visibleCount).map((purchase, index) => {
           const product = products.find((item) => item.id === purchase.productId);
           const location = locations.find((item) => item.id === purchase.locationId);
+          const previewImage = splitImageUrls(purchase.imageUrl)[0];
 
           return (
             <Panel key={purchase.id} className="space-y-4">
@@ -182,7 +186,7 @@ export const PurchaseList = ({
                     {product?.name ?? "Producto eliminado"}
                   </p>
                   <p className="theme-muted mt-1 text-sm">
-                    {location?.name ?? "Ubicacion eliminada"} · {formatDate(purchase.date)}
+                    {location?.name ?? "Ubicacion eliminada"} · {formatDateTime(purchase.date)}
                   </p>
                 </div>
                 <div className="text-right">
@@ -201,21 +205,25 @@ export const PurchaseList = ({
                 </p>
               ) : null}
 
-              {purchase.imageUrl ? (
+              {previewImage ? (
                 <button
                   type="button"
                   className="block w-full overflow-hidden rounded-[24px]"
-                  onClick={() => setSelectedPurchaseId(purchase.id)}
+                  onClick={() => {
+                    setSelectedPurchaseId(purchase.id);
+                    setSelectedImageIndex(0);
+                    setImageZoom(1);
+                  }}
                 >
                   <img
-                    src={purchase.imageUrl}
+                    src={previewImage}
                     alt={`Compra de ${product?.name ?? "producto"}`}
                     className="h-40 w-full rounded-[24px] object-cover transition hover:opacity-90"
                   />
                 </button>
               ) : null}
 
-              {purchase.imageUrl ? (
+              {previewImage ? (
                 <p className="theme-muted text-xs">Toca la imagen para ver el detalle completo.</p>
               ) : null}
 
@@ -247,7 +255,11 @@ export const PurchaseList = ({
       {selectedPurchase && selectedProduct ? (
         <div
           className="bg-black/95 fixed inset-0 z-50 flex items-center justify-center p-4"
-          onClick={() => setSelectedPurchaseId(null)}
+          onClick={() => {
+            setSelectedPurchaseId(null);
+            setSelectedImageIndex(0);
+            setImageZoom(1);
+          }}
         >
           <div
             className="theme-panel theme-text max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[32px] border p-5 shadow-panel"
@@ -258,20 +270,94 @@ export const PurchaseList = ({
                 <p className="theme-muted text-xs uppercase tracking-[0.24em]">Detalle</p>
                 <h3 className="mt-2 text-2xl font-semibold">{selectedProduct.name}</h3>
                 <p className="theme-muted mt-1 text-sm">
-                  {selectedLocation?.name ?? "Ubicacion eliminada"} · {formatDate(selectedPurchase.date)}
+                  {selectedLocation?.name ?? "Ubicacion eliminada"} · {formatDateTime(selectedPurchase.date)}
                 </p>
               </div>
-              <Button variant="ghost" className="px-3" onClick={() => setSelectedPurchaseId(null)}>
+              <Button
+                variant="ghost"
+                className="px-3"
+                onClick={() => {
+                  setSelectedPurchaseId(null);
+                  setSelectedImageIndex(0);
+                  setImageZoom(1);
+                }}
+              >
                 Cerrar
               </Button>
             </div>
 
-            {selectedPurchase.imageUrl ? (
-              <img
-                src={selectedPurchase.imageUrl}
-                alt={`Compra de ${selectedProduct.name}`}
-                className="h-auto max-h-[24rem] w-full rounded-[28px] object-contain"
-              />
+            {selectedPurchaseImages.length > 0 ? (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="theme-muted text-xs">
+                    Zoom {Math.round(imageZoom * 100)}%
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="secondary"
+                      className="px-3"
+                      onClick={() => setImageZoom((current) => Math.max(1, current - 0.25))}
+                    >
+                      -
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      className="px-3"
+                      onClick={() => setImageZoom(1)}
+                    >
+                      100%
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      className="px-3"
+                      onClick={() => setImageZoom((current) => Math.min(4, current + 0.25))}
+                    >
+                      +
+                    </Button>
+                  </div>
+                </div>
+                <div className="theme-soft h-[24rem] overflow-auto rounded-[28px] p-3">
+                  <div className="flex h-full items-center justify-center">
+                    <img
+                      src={selectedPurchaseImages[selectedImageIndex]}
+                      alt={`Compra de ${selectedProduct.name}`}
+                      className="block h-auto max-h-full w-auto max-w-full rounded-[24px] object-contain origin-center"
+                      style={{ transform: `scale(${imageZoom})` }}
+                    />
+                  </div>
+                </div>
+                {selectedPurchaseImages.length > 1 ? (
+                  <div className="flex items-center justify-between gap-3">
+                    <Button
+                      variant="secondary"
+                      className="px-3"
+                      onClick={() => {
+                        setSelectedImageIndex((current) =>
+                          current === 0 ? selectedPurchaseImages.length - 1 : current - 1
+                        );
+                        setImageZoom(1);
+                      }}
+                    >
+                      Anterior
+                    </Button>
+                    <p className="theme-muted text-xs">
+                      Imagen {selectedImageIndex + 1} de {selectedPurchaseImages.length}
+                    </p>
+                    <Button
+                      variant="secondary"
+                      className="px-3"
+                      onClick={() => {
+                        setSelectedImageIndex((current) =>
+                          current === selectedPurchaseImages.length - 1 ? 0 : current + 1
+                        );
+                        setImageZoom(1);
+                      }}
+                    >
+                      Siguiente
+                    </Button>
+                  </div>
+                ) : null}
+              </div>
             ) : null}
 
             <div className="mt-5 grid gap-4">

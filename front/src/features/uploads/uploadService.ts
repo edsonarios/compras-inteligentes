@@ -9,6 +9,7 @@ export const uploadService = {
     entityType: "locations" | "purchases";
     entityId?: string;
     fileNameStem?: string;
+    fileIndex?: number;
   }) {
     const formData = new FormData();
     formData.append("file", params.file);
@@ -19,6 +20,9 @@ export const uploadService = {
     }
     if (params.fileNameStem) {
       formData.append("fileNameStem", params.fileNameStem);
+    }
+    if (params.fileIndex !== undefined) {
+      formData.append("fileIndex", String(params.fileIndex));
     }
 
     const response = await fetch(`${API_BASE_URL}/uploads/image`, {

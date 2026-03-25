@@ -9,12 +9,13 @@ import {
   type SortRule
 } from "@/lib/sorting";
 import type { Product, Purchase } from "@/lib/types";
-import { currency } from "@/lib/utils";
+import { currency, sortByIsoDesc } from "@/lib/utils";
 
 const getLatestPrice = (productId: string, purchases: Purchase[]) =>
-  purchases
-    .filter((purchase) => purchase.productId === productId)
-    .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))[0];
+  sortByIsoDesc(
+    purchases.filter((purchase) => purchase.productId === productId),
+    (purchase) => purchase.createdAt
+  )[0];
 
 export const RecentProductList = ({
   products,

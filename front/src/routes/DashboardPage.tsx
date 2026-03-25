@@ -6,7 +6,7 @@ import { PurchaseList } from "@/features/purchases/components/PurchaseList";
 import { useSpaceStore } from "@/features/spaces/spaceStore";
 import { useProductStore } from "@/features/products/productStore";
 import { usePurchaseStore } from "@/features/purchases/purchaseStore";
-import { currency } from "@/lib/utils";
+import { currency, sortByIsoDesc } from "@/lib/utils";
 
 export const DashboardPage = () => {
   const currentSpaceId = useSpaceStore((state) => state.currentSpaceId);
@@ -27,7 +27,7 @@ export const DashboardPage = () => {
     [allLocations, currentSpaceId]
   );
   const detailedPurchases = useMemo(
-    () => [...purchases].sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt)),
+    () => sortByIsoDesc(purchases, (purchase) => purchase.createdAt),
     [purchases]
   );
   const currentSpace = spaces.find((space) => space.id === currentSpaceId);

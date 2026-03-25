@@ -1,4 +1,5 @@
-import { IsIn, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator'
+import { Type } from 'class-transformer'
+import { IsIn, IsInt, IsOptional, IsString, IsUUID, MaxLength, Min } from 'class-validator'
 
 export class UploadImageDto {
   @IsUUID()
@@ -16,4 +17,10 @@ export class UploadImageDto {
   @IsString()
   @MaxLength(160)
   fileNameStem?: string
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  fileIndex?: number
 }

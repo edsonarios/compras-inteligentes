@@ -7,6 +7,7 @@ import { useLocationStore } from "@/features/locations/locationStore";
 import { uploadService } from "@/features/uploads/uploadService";
 import { useSpaceStore } from "@/features/spaces/spaceStore";
 import { scrollToPageTop } from "@/lib/scroll";
+import { sortByIsoDesc } from "@/lib/utils";
 import type { Location } from "@/lib/types";
 
 export const LocationsPage = () => {
@@ -20,10 +21,10 @@ export const LocationsPage = () => {
   const [deletingLocationId, setDeletingLocationId] = useState<string | null>(null);
 
   const scopedLocations = useMemo(
-    () =>
-      locations
-        .filter((location) => location.spaceId === currentSpaceId)
-        .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt)),
+    () => sortByIsoDesc(
+      locations.filter((location) => location.spaceId === currentSpaceId),
+      (location) => location.createdAt
+    ),
     [locations, currentSpaceId]
   );
 

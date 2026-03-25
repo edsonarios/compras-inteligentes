@@ -1,8 +1,22 @@
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
 import { Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
-// import * as sharp from 'sharp'
-import sharp from 'sharp' // work in prod
+import { DateTime } from 'luxon'
+
+type SharpLike = ((input?: Buffer) => {
+  rotate: () => {
+    resize: (options: {
+      width: number
+      height: number
+      fit: 'inside'
+      withoutEnlargement: boolean
+    }) => {
+      webp: (options: { quality: number; effort: number }) => {
+        toBuffer: () => Promise<Buffer>
+      }
+    }
+  }
+}) & { default?: unknown }
 
 type UploadedImageFile = {
   buffer: Buffer
@@ -18,6 +32,7 @@ export class UploadsService {
   private readonly imageMaxHeight: number
   private readonly imageWebpQuality: number
   private readonly s3Client: S3Client
+  private sharpLoader?: Promise<SharpLike>
 
   constructor(private readonly configService: ConfigService) {
     const accountId = this.configService.get<string>('R2_ACCOUNT_ID', '')
@@ -58,12 +73,14 @@ export class UploadsService {
     entityType: 'locations' | 'purchases'
     entityId?: string
     fileNameStem?: string
+    fileIndex?: number
   }) {
     const optimizedBuffer = await this.optimizeImage(params.file.buffer)
     const sanitizedStem = this.sanitizeFileNamePart(params.fileNameStem)
+    const fileIndexSuffix = params.fileIndex ? `-${params.fileIndex}` : ''
     const fileName = params.entityId
-      ? `${sanitizedStem ? `${sanitizedStem}-` : ''}${params.entityId}.webp`
-      : `${params.entityType}-${Date.now()}-${Math.random()
+      ? `${sanitizedStem ? `${sanitizedStem}-` : ''}${params.entityId}${fileIndexSuffix}.webp`
+      : `${params.entityType}-${DateTime.utc().toMillis()}-${Math.random()
           .toString(36)
           .slice(2, 10)}.webp`
     const key = `ci/${params.spaceId}/${fileName}`
@@ -83,7 +100,9 @@ export class UploadsService {
     }
   }
 
-  private optimizeImage(buffer: Buffer) {
+  private async optimizeImage(buffer: Buffer) {
+    const sharp = await this.getSharp()
+
     return sharp(buffer)
       .rotate()
       .resize({
@@ -97,6 +116,22 @@ export class UploadsService {
         effort: 4,
       })
       .toBuffer()
+  }
+
+  private async getSharp() {
+    if (!this.sharpLoader) {
+      this.sharpLoader = (async () => {
+        try {
+          const requiredSharp = eval('require')('sharp') as SharpLike
+          return (requiredSharp.default ?? requiredSharp) as SharpLike
+        } catch {
+          const importedSharp = (await import('sharp')) as unknown as SharpLike
+          return (importedSharp.default ?? importedSharp) as SharpLike
+        }
+      })()
+    }
+
+    return this.sharpLoader
   }
 
   private sanitizeFileNamePart(value?: string) {

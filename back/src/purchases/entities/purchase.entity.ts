@@ -45,13 +45,13 @@ export class Purchase {
   space: Space
 
   @ManyToOne(() => Product, (product) => product.purchases, {
-    onDelete: 'RESTRICT',
+    onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'productId' })
   product: Product
 
   @ManyToOne(() => Location, (location) => location.purchases, {
-    onDelete: 'RESTRICT',
+    onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'locationId' })
   location: Location

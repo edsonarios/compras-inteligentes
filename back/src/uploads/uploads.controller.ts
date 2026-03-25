@@ -44,6 +44,10 @@ export class UploadsController {
       entityType: uploadImageDto.entityType,
       entityId: uploadImageDto.entityId,
       fileNameStem: uploadImageDto.fileNameStem,
+      fileIndex:
+        uploadImageDto.fileIndex !== undefined
+          ? Number(uploadImageDto.fileIndex)
+          : undefined,
     })
   }
 }

@@ -8,7 +8,11 @@ import {
   Textarea
 } from "@/components/ui";
 import type { Location, Product, Purchase } from "@/lib/types";
-import { toInputDate } from "@/lib/utils";
+import {
+  getDefaultPurchaseDateTime,
+  splitImageUrls,
+  toInputDateTime
+} from "@/lib/utils";
 
 type PurchaseFormValues = {
   productId: string;
@@ -22,7 +26,7 @@ type PurchaseFormValues = {
   date: string;
   note: string;
   imageUrl?: string;
-  imageFile?: File | null;
+  imageFiles: File[];
 };
 
 const defaultValues: PurchaseFormValues = {
@@ -34,10 +38,10 @@ const defaultValues: PurchaseFormValues = {
   locationName: "",
   price: "",
   quantity: "1",
-  date: toInputDate(new Date().toISOString()),
+  date: getDefaultPurchaseDateTime(),
   note: "",
   imageUrl: "",
-  imageFile: null
+  imageFiles: []
 };
 
 export const PurchaseForm = ({
@@ -116,10 +120,10 @@ export const PurchaseForm = ({
         locations.find((location) => location.id === initialValue.locationId)?.name ?? "",
       price: initialValue.price.toString(),
       quantity: initialValue.quantity.toString(),
-      date: toInputDate(initialValue.date),
+      date: toInputDateTime(initialValue.date),
       note: initialValue.note,
       imageUrl: initialValue.imageUrl ?? "",
-      imageFile: null
+      imageFiles: []
     });
   }, [initialValue, products, locations]);
 
@@ -179,12 +183,46 @@ export const PurchaseForm = ({
     });
   }, [selectedLocation, isCreatingLocation]);
 
-  const onImageChange = async (file?: File) => {
-    if (!file) {
-      setValues((prev) => ({ ...prev, imageFile: null }));
+  const previewImages = splitImageUrls(values.imageUrl);
+  const totalImages = previewImages.length + values.imageFiles.length;
+  const pendingImagePreviews = useMemo(
+    () =>
+      values.imageFiles.map((file) => ({
+        file,
+        url: URL.createObjectURL(file)
+      })),
+    [values.imageFiles]
+  );
+
+  useEffect(() => {
+    return () => {
+      pendingImagePreviews.forEach((preview) => URL.revokeObjectURL(preview.url));
+    };
+  }, [pendingImagePreviews]);
+
+  const onImageChange = async (files?: FileList | null) => {
+    if (!files?.length) {
+      setValues((prev) => ({ ...prev, imageFiles: [] }));
       return;
     }
-    setValues((prev) => ({ ...prev, imageFile: file }));
+    setValues((prev) => ({
+      ...prev,
+      imageFiles: [...prev.imageFiles, ...Array.from(files)]
+    }));
+  };
+
+  const removeStoredImage = (indexToRemove: number) => {
+    setValues((prev) => ({
+      ...prev,
+      imageUrl: previewImages.filter((_, index) => index !== indexToRemove).join(",")
+    }));
+  };
+
+  const removePendingImage = (indexToRemove: number) => {
+    setValues((prev) => ({
+      ...prev,
+      imageFiles: prev.imageFiles.filter((_, index) => index !== indexToRemove)
+    }));
   };
 
   return (
@@ -421,9 +459,10 @@ export const PurchaseForm = ({
           </Field>
         </div>
 
-        <Field label="Fecha">
+        <Field label="Fecha y hora">
           <Input
-            type="date"
+            type="datetime-local"
+            step="1"
             value={values.date}
             onChange={(event) => setValues((prev) => ({ ...prev, date: event.target.value }))}
           />
@@ -437,22 +476,86 @@ export const PurchaseForm = ({
           />
         </Field>
 
-        <Field label="Imagen">
+        <Field label="Imagenes" hint={`${totalImages} total`}>
           <Input
             type="file"
             accept="image/*"
-            onChange={(event) => onImageChange(event.target.files?.[0])}
+            multiple
+            onChange={(event) => onImageChange(event.target.files)}
             className="pt-2"
           />
         </Field>
 
-        {values.imageUrl ? (
-          <img
-            src={values.imageUrl}
-            alt={values.productName || "Compra"}
-            className="h-32 w-full rounded-[24px] object-cover"
-          />
+        {previewImages.length > 0 ? (
+          <div className="space-y-3">
+            <p className="theme-muted text-xs uppercase tracking-[0.2em]">
+              Imagenes guardadas
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              {previewImages.map((image, index) => (
+                <div key={`${image}-${index}`} className="space-y-2">
+                  <img
+                    src={image}
+                    alt={`${values.productName || "Compra"} ${index + 1}`}
+                    className="h-28 w-full rounded-[20px] object-cover"
+                  />
+                  <Button
+                    variant="ghost"
+                    className="w-full px-3"
+                    onClick={() => removeStoredImage(index)}
+                    disabled={isSubmitting}
+                  >
+                    Quitar imagen
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
         ) : null}
+
+        {values.imageFiles.length > 0 ? (
+          <div className="space-y-3">
+            <p className="theme-muted text-xs uppercase tracking-[0.2em]">
+              Nuevas imagenes por subir
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              {pendingImagePreviews.map((preview, index) => (
+                <div
+                  key={`${preview.file.name}-${index}`}
+                  className="theme-soft space-y-2 rounded-[20px] p-3"
+                >
+                  <img
+                    src={preview.url}
+                    alt={`${preview.file.name} preview`}
+                    className="h-28 w-full rounded-[16px] object-cover"
+                  />
+                  <div className="min-w-0">
+                    <p className="theme-text truncate text-sm font-medium">
+                      {preview.file.name}
+                    </p>
+                    <p className="theme-muted text-xs">Imagen nueva #{index + 1}</p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    className="w-full px-3"
+                    onClick={() => removePendingImage(index)}
+                    disabled={isSubmitting}
+                  >
+                    Quitar
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        {totalImages === 0 ? (
+          <p className="theme-muted text-xs">
+            Esta compra aun no tiene imagenes asociadas.
+          </p>
+        ) : (
+          <p className="theme-muted text-xs">Total preparado: {totalImages} imagenes.</p>
+        )}
       </div>
 
       <div className="flex gap-3">

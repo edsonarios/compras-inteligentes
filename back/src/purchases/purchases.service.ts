@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
+import { DateTime } from 'luxon'
 import { Repository } from 'typeorm'
 import { CreatePurchaseDto } from './dto/create-purchase.dto'
 import { UpdatePurchaseDto } from './dto/update-purchase.dto'
@@ -16,7 +17,7 @@ export class PurchasesService {
     const { date, ...rest } = createPurchaseDto
     const purchase = this.purchasesRepository.create({
       ...rest,
-      purchasedAt: new Date(date),
+      purchasedAt: DateTime.fromISO(date).toJSDate(),
     })
 
     return this.purchasesRepository.save(purchase)
@@ -55,7 +56,10 @@ export class PurchasesService {
 
     Object.assign(purchase, {
       ...rest,
-      purchasedAt: date !== undefined ? new Date(date) : purchase.purchasedAt,
+      purchasedAt:
+        date !== undefined
+          ? DateTime.fromISO(date).toJSDate()
+          : purchase.purchasedAt,
     })
 
     return this.purchasesRepository.save(purchase)

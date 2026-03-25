@@ -30,7 +30,7 @@ export class SpaceMember {
 
   @ManyToOne(() => User, (user) => user.memberships, {
     nullable: true,
-    onDelete: 'SET NULL',
+    onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'userId' })
   user?: User | null

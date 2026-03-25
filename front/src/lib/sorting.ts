@@ -1,3 +1,5 @@
+import { DateTime } from "luxon";
+
 export type SortDirection = "asc" | "desc";
 
 export type SortRule<Field extends string> = {
@@ -16,7 +18,11 @@ export const compareNumber = (left: number, right: number, direction: SortDirect
 };
 
 export const compareDate = (left: string, right: string, direction: SortDirection) =>
-  compareNumber(new Date(left).getTime(), new Date(right).getTime(), direction);
+  compareNumber(
+    DateTime.fromISO(left).toMillis(),
+    DateTime.fromISO(right).toMillis(),
+    direction
+  );
 
 export const applySortRules = <T, Field extends string>(
   items: T[],

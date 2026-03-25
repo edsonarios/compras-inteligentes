@@ -25,7 +25,7 @@ export class Space {
   @Column()
   ownerId: string
 
-  @ManyToOne(() => User, (user) => user.ownedSpaces, { onDelete: 'RESTRICT' })
+  @ManyToOne(() => User, (user) => user.ownedSpaces, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'ownerId' })
   owner: User
 

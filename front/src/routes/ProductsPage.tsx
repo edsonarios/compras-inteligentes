@@ -7,6 +7,7 @@ import { useProductStore } from "@/features/products/productStore";
 import { usePurchaseStore } from "@/features/purchases/purchaseStore";
 import { useSpaceStore } from "@/features/spaces/spaceStore";
 import { scrollToPageTop } from "@/lib/scroll";
+import { sortByIsoDesc } from "@/lib/utils";
 import type { Product } from "@/lib/types";
 
 export const ProductsPage = () => {
@@ -21,10 +22,10 @@ export const ProductsPage = () => {
   const [deletingProductId, setDeletingProductId] = useState<string | null>(null);
 
   const scopedProducts = useMemo(
-    () =>
-      products
-        .filter((product) => product.spaceId === currentSpaceId)
-        .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt)),
+    () => sortByIsoDesc(
+      products.filter((product) => product.spaceId === currentSpaceId),
+      (product) => product.createdAt
+    ),
     [products, currentSpaceId]
   );
   const scopedPurchases = useMemo(

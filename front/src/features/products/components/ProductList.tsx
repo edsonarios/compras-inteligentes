@@ -1,11 +1,12 @@
 import { Button, Panel, SectionHeader } from "@/components/ui";
 import type { Product, Purchase } from "@/lib/types";
-import { currency, formatDate } from "@/lib/utils";
+import { currency, formatDate, sortByIsoDesc } from "@/lib/utils";
 
 const getHistory = (productId: string, purchases: Purchase[]) =>
-  purchases
-    .filter((purchase) => purchase.productId === productId)
-    .sort((a, b) => +new Date(b.date) - +new Date(a.date));
+  sortByIsoDesc(
+    purchases.filter((purchase) => purchase.productId === productId),
+    (purchase) => purchase.date
+  );
 
 export const ProductList = ({
   products,

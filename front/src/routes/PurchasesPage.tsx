@@ -8,6 +8,12 @@ import { usePurchaseStore } from "@/features/purchases/purchaseStore";
 import { useProductStore } from "@/features/products/productStore";
 import { uploadService } from "@/features/uploads/uploadService";
 import { useSpaceStore } from "@/features/spaces/spaceStore";
+import {
+  inputDateTimeToIso,
+  joinImageUrls,
+  sortByIsoDesc,
+  splitImageUrls
+} from "@/lib/utils";
 import { scrollToPageTop } from "@/lib/scroll";
 import type { Purchase } from "@/lib/types";
 
@@ -32,10 +38,10 @@ export const PurchasesPage = () => {
     [products, currentSpaceId]
   );
   const scopedPurchases = useMemo(
-    () =>
-      purchases
-        .filter((purchase) => purchase.spaceId === currentSpaceId)
-        .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt)),
+    () => sortByIsoDesc(
+      purchases.filter((purchase) => purchase.spaceId === currentSpaceId),
+      (purchase) => purchase.createdAt
+    ),
     [purchases, currentSpaceId]
   );
   const scopedLocations = useMemo(
@@ -125,24 +131,33 @@ export const PurchasesPage = () => {
                 spaceId: currentSpaceId,
                 price: Number(values.price),
                 quantity: Number(values.quantity),
-                date: new Date(values.date).toISOString(),
+                date: inputDateTimeToIso(values.date),
                 note: values.note
               };
 
               if (editingPurchase) {
-                const uploadedImage = values.imageFile
-                  ? await uploadService.uploadImage({
-                      file: values.imageFile,
-                      spaceId: currentSpaceId,
-                      entityType: "purchases",
-                      entityId: editingPurchase.id,
-                      fileNameStem: values.productName.trim()
-                    })
-                  : null;
+                const currentImages = splitImageUrls(values.imageUrl);
+                const uploadedImages = values.imageFiles.length
+                  ? await Promise.all(
+                      values.imageFiles.map((file, index) =>
+                        uploadService.uploadImage({
+                          file,
+                          spaceId: currentSpaceId,
+                          entityType: "purchases",
+                          entityId: editingPurchase.id,
+                          fileNameStem: values.productName.trim(),
+                          fileIndex: currentImages.length + index + 1
+                        })
+                      )
+                    )
+                  : [];
 
                 await updatePurchase(editingPurchase.id, {
                   ...basePayload,
-                  imageUrl: uploadedImage?.url ?? editingPurchase?.imageUrl ?? values.imageUrl
+                  imageUrl: joinImageUrls([
+                    ...currentImages,
+                    ...uploadedImages.map((image) => image.url)
+                  ])
                 });
                 setEditingPurchase(null);
                 return;
@@ -153,17 +168,22 @@ export const PurchasesPage = () => {
                 imageUrl: values.imageUrl
               });
 
-              if (values.imageFile) {
-                const uploadedImage = await uploadService.uploadImage({
-                  file: values.imageFile,
-                  spaceId: currentSpaceId,
-                  entityType: "purchases",
-                  entityId: createdPurchase.id,
-                  fileNameStem: values.productName.trim()
-                });
+              if (values.imageFiles.length) {
+                const uploadedImages = await Promise.all(
+                  values.imageFiles.map((file, index) =>
+                    uploadService.uploadImage({
+                      file,
+                      spaceId: currentSpaceId,
+                      entityType: "purchases",
+                      entityId: createdPurchase.id,
+                      fileNameStem: values.productName.trim(),
+                      fileIndex: index + 1
+                    })
+                  )
+                );
 
                 await updatePurchase(createdPurchase.id, {
-                  imageUrl: uploadedImage.url
+                  imageUrl: joinImageUrls(uploadedImages.map((image) => image.url))
                 });
               }
             } finally {
