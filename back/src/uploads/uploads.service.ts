@@ -1,9 +1,17 @@
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
-import { Injectable } from '@nestjs/common'
+import { BadRequestException, Injectable, Logger } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { DateTime } from 'luxon'
 
-type SharpLike = ((input?: Buffer) => {
+type SharpFailOn = 'none' | 'truncated' | 'error' | 'warning'
+
+type SharpLike = ((
+  input?: Buffer,
+  options?: {
+    failOn?: SharpFailOn
+    sequentialRead?: boolean
+  },
+) => {
   rotate: () => {
     resize: (options: {
       width: number
@@ -26,6 +34,7 @@ type UploadedImageFile = {
 
 @Injectable()
 export class UploadsService {
+  private readonly logger = new Logger(UploadsService.name)
   private readonly bucketName: string
   private readonly publicBaseUrlView: string
   private readonly imageMaxWidth: number
@@ -102,20 +111,46 @@ export class UploadsService {
 
   private async optimizeImage(buffer: Buffer) {
     const sharp = await this.getSharp()
+    const createPipeline = (failOn: SharpFailOn) =>
+      sharp(buffer, {
+        failOn,
+        sequentialRead: true,
+      })
+        .rotate()
+        .resize({
+          width: this.imageMaxWidth,
+          height: this.imageMaxHeight,
+          fit: 'inside',
+          withoutEnlargement: true,
+        })
+        .webp({
+          quality: this.imageWebpQuality,
+          effort: 4,
+        })
 
-    return sharp(buffer)
-      .rotate()
-      .resize({
-        width: this.imageMaxWidth,
-        height: this.imageMaxHeight,
-        fit: 'inside',
-        withoutEnlargement: true,
-      })
-      .webp({
-        quality: this.imageWebpQuality,
-        effort: 4,
-      })
-      .toBuffer()
+    try {
+      return await createPipeline('none').toBuffer()
+    } catch (error) {
+      this.logger.warn(
+        `Primary image optimization failed, retrying in strict-safe mode: ${
+          error instanceof Error ? error.message : 'unknown error'
+        }`,
+      )
+
+      try {
+        return await createPipeline('truncated').toBuffer()
+      } catch (retryError) {
+        this.logger.error(
+          `Image optimization failed after retry: ${
+            retryError instanceof Error ? retryError.message : 'unknown error'
+          }`,
+        )
+
+        throw new BadRequestException(
+          'No se pudo procesar la imagen subida. Intenta con otra foto o vuelve a exportarla desde la galeria.',
+        )
+      }
+    }
   }
 
   private async getSharp() {
